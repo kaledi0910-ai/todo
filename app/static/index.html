@@ -8,7 +8,7 @@
   :root { --dark:#595460; --accent:#6B6B8F; --light:#EBEDEB; }
   * { box-sizing: border-box; }
   body { margin:0; font-family: "Microsoft JhengHei", system-ui, sans-serif; background: var(--light); color:#222; }
-  main { max-width: 560px; margin: 40px auto; background:#fff; border-radius: 12px; padding: 24px 28px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+  main { max-width: 620px; margin: 40px auto; background:#fff; border-radius: 12px; padding: 24px 28px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
   h1 { margin:0 0 4px; font-size: 22px; color: var(--dark); }
   .sub { font-size: 13px; color:#777; margin-bottom: 18px; }
   form { display:flex; gap:8px; margin-bottom: 14px; }
@@ -19,7 +19,9 @@
   ul { list-style:none; padding:0; margin:0; }
   li { display:flex; align-items:center; gap:10px; padding:10px 6px; border-bottom:1px solid #eee; }
   li.done span.t { text-decoration: line-through; color:#999; }
-  span.t { flex:1; }
+  .todo-content { flex:1; min-width:0; }
+  span.t { display:block; }
+  .completed-at { display:block; margin-top:3px; font-size:12px; color:#888; }
   .empty { text-align:center; color:#999; padding: 24px 0; }
   footer { margin-top: 18px; font-size: 12px; color:#888; display:flex; justify-content:space-between; }
   footer code { background:#f3f3f3; padding:2px 6px; border-radius:4px; }
@@ -58,6 +60,7 @@
 <script>
 const $ = (s) => document.querySelector(s);
 const api = (path, opt = {}) => fetch(path, { headers: { "Content-Type": "application/json" }, ...opt });
+const formatDate = (value) => value ? new Date(value).toLocaleString("zh-TW", { dateStyle: "medium", timeStyle: "short" }) : "";
 
 async function load() {
   // 實作 4：Codex Cloud 加了 GET /todos?done=true|false 之後，這個下拉選單就會生效
@@ -68,8 +71,9 @@ async function load() {
   $("#empty").hidden = todos.length > 0;
   for (const t of todos) {
     const li = document.createElement("li"); li.className = t.done ? "done" : "";
-    li.innerHTML = `<input type="checkbox" ${t.done ? "checked" : ""}> <span class="t"></span> <button class="ghost" title="刪除">✕</button>`;
+    li.innerHTML = `<input type="checkbox" ${t.done ? "checked" : ""}> <div class="todo-content"><span class="t"></span><small class="completed-at"></small></div> <button class="ghost" title="刪除">✕</button>`;
     li.querySelector(".t").textContent = t.title;
+    li.querySelector(".completed-at").textContent = t.completed_at ? `完成日期：${formatDate(t.completed_at)}` : "";
     li.querySelector("input").onchange = async (e) => { await api(`/todos/${t.id}`, { method: "PATCH", body: JSON.stringify({ done: e.target.checked }) }); load(); };
     li.querySelector("button").onclick = async () => { await api(`/todos/${t.id}`, { method: "DELETE" }); load(); };
     ul.appendChild(li);
