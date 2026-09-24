@@ -17,6 +17,7 @@ class Todo(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(UTC), nullable=False
     )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 # ---------- Pydantic schemas ----------
@@ -34,5 +35,6 @@ class TodoOut(BaseModel):
     title: str
     done: bool
     created_at: datetime
+    completed_at: datetime | None
 
     model_config = {"from_attributes": True}
