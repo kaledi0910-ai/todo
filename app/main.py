@@ -12,6 +12,7 @@
 """
 import os
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, status
@@ -82,6 +83,7 @@ def update_todo(todo_id: int, payload: TodoUpdate, db: Session = Depends(get_db)
         todo.title = payload.title
     if payload.done is not None:
         todo.done = payload.done
+        todo.completed_at = datetime.now(UTC) if payload.done else None
     db.commit()
     db.refresh(todo)
     return todo
