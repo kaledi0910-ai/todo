@@ -3,6 +3,28 @@
 一個刻意做小的 FastAPI 待辦清單 API，用來走完整條路：
 **Codex 寫程式 → Git → GitHub Actions CI/CD → Argo CD GitOps → 自建 Worker Agent。**
 
+## 系統架構
+
+```mermaid
+flowchart LR
+    Dev[開發者 / Codex] -->|修改程式碼| Git[Git / GitHub]
+    Git --> CI[GitHub Actions]
+    CI -->|Test / Review / Gate| Build[Build Docker Image]
+    Build --> GHCR[GHCR]
+    CI -->|更新 manifest| Git
+    Git --> Argo[Argo CD]
+    Argo -->|GitOps Sync| K8s[Kubernetes / kind]
+    GHCR -->|Pull Image| K8s
+    K8s --> API[FastAPI Todo API]
+    User[Browser / Swagger] --> API
+    Git --> Agent[Worker Agent]
+    Agent -->|Review / Autofix| Git
+```
+
+**流程：** Codex 協助開發 → GitHub Actions 驗證與建置 → GHCR 保存映像 → Argo CD 監看 Git → Kubernetes 自動同步部署；Worker Agent 再協助 GitHub 上的 review 與修復。
+
+👉 [查看完整架構圖、CI/CD 時序圖與元件說明](docs/architecture.md)
+
 ## 快速開始
 ```bash
 # macOS / Linux / WSL2
