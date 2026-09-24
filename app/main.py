@@ -12,11 +12,12 @@
 """
 import os
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.responses import FileResponse
-from sqlalchemy import select
+from sqlalchemy import inspect, select, text
 from sqlalchemy.orm import Session
 
 from . import db as db_module
@@ -26,10 +27,22 @@ from .models import Todo, TodoCreate, TodoOut, TodoUpdate
 APP_VERSION = os.getenv("APP_VERSION", "0.1.0")
 
 
+def _ensure_completed_at_column() -> None:
+    """教學專案的輕量 schema 升級；既有 SQLite DB 也能加入完成日期欄位。"""
+    inspector = inspect(db_module.engine)
+    if "todos" not in inspector.get_table_names():
+        return
+    columns = {column["name"] for column in inspector.get_columns("todos")}
+    if "completed_at" not in columns:
+        with db_module.engine.begin() as conn:
+            conn.execute(text("ALTER TABLE todos ADD COLUMN completed_at DATETIME"))
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     """啟動時建表（教學用；正式環境請改用 Alembic migration）。"""
     Base.metadata.create_all(bind=db_module.engine)
+    _ensure_completed_at_column()
     yield
 
 
@@ -81,6 +94,10 @@ def update_todo(todo_id: int, payload: TodoUpdate, db: Session = Depends(get_db)
     if payload.title is not None:
         todo.title = payload.title
     if payload.done is not None:
+        if payload.done and not todo.done:
+            todo.completed_at = datetime.now(UTC)
+        elif not payload.done:
+            todo.completed_at = None
         todo.done = payload.done
     db.commit()
     db.refresh(todo)
